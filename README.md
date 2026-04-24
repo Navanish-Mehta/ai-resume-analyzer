@@ -231,7 +231,21 @@ http://localhost:5173
 
 ## 📸 Screenshots
 
-> Add UI screenshots here for better presentation
+>
+> ### 🖥 Dashboard
+> <img width="1297" height="630" alt="Screenshot (11)" src="https://github.com/user-attachments/assets/49ed6ee3-157c-4da8-8825-7635c5dd23a3" />
+### 📊 Analysis Result
+<img width="1297" height="621" alt="Screenshot (15)" src="https://github.com/user-attachments/assets/a8db9beb-8a1b-4817-8253-e65b2f323573" />
+
+### 📸 FEATURES
+<img width="1309" height="625" alt="Screenshot (12)" src="https://github.com/user-attachments/assets/016426da-ae4e-402a-abac-842395023bf3" />
+
+### 📊 LIVE DEMO
+<img width="1300" height="630" alt="Screenshot (13)" src="https://github.com/user-attachments/assets/af57c2b3-f9c1-4005-a50a-a6f6d6ee7f51" />
+
+
+ ### 🖥 FOOTER
+ <img width="1323" height="621" alt="Screenshot (17)" src="https://github.com/user-attachments/assets/36a01890-8f0b-4e35-a899-1a54c1e7686e" />
 
 ---
 
