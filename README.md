@@ -252,3 +252,16 @@ http://localhost:5173
 ## 📄 License
 
 MIT License — free to use and modify.
+---
+
+## 👨‍💻 Created By
+
+**Navanish Mehta**
+Full Stack Developer
+
+Building intelligent, scalable, and production-ready AI applications that solve real-world problems.
+
+---
+
+⭐ Star this repo if you like the project!
+
