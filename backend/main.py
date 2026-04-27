@@ -10,9 +10,13 @@ from io import BytesIO
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, Form, HTTPException, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import PyPDF2
 from google import genai
+
+class ImproveRequest(BaseModel):
+    resume_text: str
 
 # ── Environment ───────────────────────────────────────────────────────────────
 _env_path = Path(__file__).parent / ".env"
@@ -39,12 +43,19 @@ else:
 # ── FastAPI App ───────────────────────────────────────────────────────────────
 app = FastAPI(title="AI Resume Analyzer API", version="3.0.0")
 
-allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
-allowed_origins = [o.strip() for o in allowed_origins_raw.split(",") if o.strip()]
+# ── FIX CORS CONFIGURATION (CRITICAL) ─────────────────────────────────────────
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "")
+origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(",") if origin.strip()]
+
+# Safe fallback for development only
+if not origins:
+    origins = ["*"]
+
+print(f"CORS allowed origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -106,7 +117,10 @@ def extract_text_from_pdf(content: bytes, max_chars: int = 1500) -> str:
 def extract_json_safely(raw: str) -> Dict[str, Any]:
     raw = raw.strip()
     try:
-        return json.loads(raw)
+        data = json.loads(raw)
+        if not isinstance(data, dict):
+            raise ValueError("JSON is not an object")
+        return data
     except json.JSONDecodeError:
         pass
     cleaned = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.MULTILINE)
@@ -259,7 +273,10 @@ async def analyze_resume(
 ):
     try:
         if not (file.filename or "").lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "Only PDF files are accepted."}
+            )
         
         content = await file.read()
         resume_text = extract_text_from_pdf(content, max_chars=1500)
@@ -290,16 +307,22 @@ JD: {jd_trimmed}"""
 
     except Exception as e:
         logger.error(f"Backend error: {e}")
-        return {"error": "System busy, please try again shortly"}
+        return JSONResponse(
+            status_code=503,
+            content={"success": False, "error": "Service temporarily unavailable"}
+        )
 
 @app.post("/api/improve")
 async def improve_resume(
-    resume_text: str = Form(...),
+    request: ImproveRequest,
 ):
     """Separate API call for Resume Improver, only when clicked."""
     try:
-        prompt = f"Improve these resume bullet points using STAR format. Return JSON list of {{'original': '...', 'improved': '...'}}. RESUME: {resume_text[:1000]}"
+        prompt = f"Improve these resume bullet points using STAR format. Return JSON list of {{'original': '...', 'improved': '...'}}. RESUME: {request.resume_text[:1000]}"
         raw = await call_gemini_optimized(prompt)
         return extract_json_safely(raw)
     except Exception as e:
-        return {"error": "Improver currently busy. Please try again later."}
+        return JSONResponse(
+            status_code=503,
+            content={"success": False, "error": "Improver currently busy. Please try again later."}
+        )

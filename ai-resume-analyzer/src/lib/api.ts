@@ -73,12 +73,12 @@ export const analyzeResume = async (
 };
 
 export const improveResume = async (resumeText: string): Promise<BulletImprovement[]> => {
-  const formData = new FormData();
-  formData.append("resume_text", resumeText);
-
   const response = await fetch(`${API_URL}/api/improve`, {
     method: "POST",
-    body: formData,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ resume_text: resumeText }),
   });
 
   if (!response.ok) throw new Error("Improver service currently unavailable.");
