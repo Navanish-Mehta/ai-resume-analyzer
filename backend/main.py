@@ -15,9 +15,6 @@ from pydantic import BaseModel, Field
 import PyPDF2
 from google import genai
 
-class ImproveRequest(BaseModel):
-    resume_text: str
-
 # ── Environment ───────────────────────────────────────────────────────────────
 _env_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=_env_path)
@@ -43,12 +40,18 @@ else:
 # ── FastAPI App ───────────────────────────────────────────────────────────────
 app = FastAPI(title="AI Resume Analyzer API", version="3.0.0")
 
-# ── FIX CORS CONFIGURATION (CRITICAL) ─────────────────────────────────────────
+# ── FIX CORS CONFIGURATION (PRODUCTION ROBUST) ────────────────────────────────
+# Get origins from environment, with a safe production default for your Vercel app
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "")
-origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(",") if origin.strip()]
+origins = [origin.strip().rstrip('/') for origin in ALLOWED_ORIGINS.split(",") if origin.strip()]
 
-# Safe fallback for development only
-if not origins:
+# Add your production Vercel URL as a hardcoded safety fallback to prevent "No Access-Control-Allow-Origin"
+PROD_FRONTEND = "https://ai-resume-analyzer-rho-puce.vercel.app"
+if PROD_FRONTEND not in origins and "*" not in origins:
+    origins.append(PROD_FRONTEND)
+
+# If still empty (local dev), allow everything
+if not origins or (len(origins) == 1 and origins[0] == ""):
     origins = ["*"]
 
 print(f"CORS allowed origins: {origins}")
@@ -57,11 +60,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
 )
 
 # ── Response Schemas ──────────────────────────────────────────────────────────
+class ImproveRequest(BaseModel):
+    resume_text: str
+
 class Metadata(BaseModel):
     match_score: int = Field(ge=0, le=100)
     fit_status: str
